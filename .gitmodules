@@ -1,0 +1,3 @@
+[submodule "testgoban/src/components/Goban"]
+	path = testgoban/src/components/Goban
+	url = https://github.com/rrb211570/Goban

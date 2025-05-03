@@ -1,10 +1,10 @@
 
 import { configureStore } from '@reduxjs/toolkit'
-import gamePlayReducer from './reducers/gamePlaySlice.js'
+import testBoardTraversalReducer from './reducers/testBoardTraversal.js'
 
-const store = configureStore({
+const testGobanStore = configureStore({
     reducer: {
-        gamePlay: gamePlayReducer
+        testBoardTraversal: testBoardTraversalReducer
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
@@ -19,4 +19,4 @@ const store = configureStore({
         })
 })
 
-export { store };
+export { testGobanStore };

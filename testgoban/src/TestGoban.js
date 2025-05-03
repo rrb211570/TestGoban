@@ -1,12 +1,14 @@
-import './AlphaGo.css';
+import './TestGoban.css';
+import { useEffect, useState } from 'react';
 import AWS from 'aws-sdk';
-import NavBar from './components/NavBar/NavBar.js';
+
 import { Provider as TestGobanProvider } from 'react-redux';
 import { Provider as GobanProvider } from 'react-redux';
 import { testGobanStore } from './store/store';
 import { gobanStore } from './components/Goban/store/store.js';
-import Goban from './components/Goban/components/Goban/Goban.js';
-import { useEffect, useState } from 'react';
+import Goban from './components/Goban/Goban.js';
+import { setTestCases, setMoveSet } from './store/reducers/testBoardTraversal.js';
+
 import SGFVisualizer from './components/SGFVisualizer/SGFVisualizer.js';
 import parseSGFMoves from './helpers/parseSGF.js';
 import GameTraversal from './components/GameTraversal/GameTraversal.js';
@@ -23,10 +25,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 const boardSize = 9; // Standard Go board size
 
 function TestGoban() {
-  const [testCases, setTestCases] = useState([]);
-  const [testBoard, setTestBoard] = useState([]);
-  const [loadedSGFMoves, setLoadedSGFMoves] = useState([]);
-  const [currentMoveIndex, setCurrentMoveIndex] = useState('') // initialize with index from server-side session state
+  const [meh, setMeh] = useState('');
 
   useEffect(() => {
     // Process all SGF files, populate test results, load first failure into visualizer
@@ -36,13 +35,11 @@ function TestGoban() {
         const items = data.Items;
 
         if (items.length >= 2) {
-          let moves = parseSGFMoves(items[0].Content);
-          console.log(items[0].Content);
-          console.log(moves);
           console.log(items);
-          setTestCases(items); // Populate testCases with SGF objects
-          setLoadedSGFMoves(moves);
-          initializeTestBoard(moves);
+          let moveSet = parseSGFMoves(items[0].Content);
+          console.log(moveSet);
+          testGobanStore.dispatch(setTestCases({ testCases: items })); // Populate testCases with SGF objects
+          testGobanStore.dispatch(setMoveSet({ moveSet: moveSet })); // Populate testBoard with SGF moves
           // - iterate through tests: when Goban and testSGF diverge, note the failed test, breaking move, and index of timeTravel
           // - initialize testGoban and Goban to the first failed test and index of divergence
         } else console.error('Not enough items in the DynamoDB table to set testBoard.');
@@ -53,37 +50,22 @@ function TestGoban() {
     fetchDB_SGFContents();
   }, [])
 
-  const initializeTestBoard = (moves) => {
-    const initialTestBoard = Array.from({ length: boardSize }, () =>
-      Array(boardSize).fill(null)
-    );
-    moves.forEach((move) => { // Parse SGF moves and update the board
-      if (move.coords) {
-        const x = move.coords.charCodeAt(0) - 'a'.charCodeAt(0);
-        const y = move.coords.charCodeAt(1) - 'a'.charCodeAt(0);
-        initialTestBoard[y][x] = move.color === 'B' ? 'black' : 'white';
-      }
-    });
-    setCurrentMoveIndex(moves.length);
-    setTestBoard(initialTestBoard);
-  }
-
   return (
     <div className="TestGoban">
       <TestGobanProvider store={testGobanStore}>
         <div>
-          <NavBar></NavBar>
           <div id='Boards' style={{ display: 'flex', flexDirection: 'row', justifyContent: 'spaceBetween', alignItems: 'center' }}>
             <GobanProvider store={gobanStore}>
               <div>
                 <Goban playground={true}></Goban>
               </div>
             </GobanProvider>
-            <SGFVisualizer testBoard={testBoard}></SGFVisualizer>
+            <SGFVisualizer></SGFVisualizer>
           </div>
-          <GameTraversal currentMoveIndex={currentMoveIndex}></GameTraversal>
+          <GameTraversal></GameTraversal>
           <TestTraversal></TestTraversal>
         </div>
+
       </TestGobanProvider>
     </div>
   );
