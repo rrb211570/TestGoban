@@ -4,13 +4,16 @@ import parseSGFMoves from "../../helpers/parseSGF";
 import React, { useState } from "react";
 import { setCurrentMoveIndex } from "../../store/reducers/testBoardTraversal";
 import { useSelector } from "react-redux";
+import { gobanStore } from "../Goban/store/store";
+import { undo, redo } from "../Goban/store/reducers/gamePlaySlice";
+import { fireEvent } from "@testing-library/react";
 
 function GameTraversal() {
     const [breakingMove, setBreakingMove] = useState('');
     const index = useSelector((state) => state.testBoardTraversal.currentMoveIndex);
     const moveSet = useSelector((state) => state.testBoardTraversal.moveSet);
 
-    const handlePreviousMove = () => {
+    const handlePreviousMove = () => { // undo move
         if (index > 0) {
             testGobanStore.dispatch(setCurrentMoveIndex({
                 currentMoveIndex: index - 1
@@ -20,11 +23,22 @@ function GameTraversal() {
                     .map(move => `;${move.color}[${move.coords}]`)
                     .join(''))
             }));
+            // get deadStones if any
+            let deadStones = gobanStore.getState().gamePlay.history[gobanStore.getState().gamePlay.historyIndex].deadStones;
+            for(let deadStone of deadStones) {
+                fireEvent.mouseOver(document.querySelector('#clickSquare_' + deadStone));
+            }
+            gobanStore.dispatch(undo({ coords: moveSet[index - 1].coords }));
+            let latestStoneID = (moveSet[index - 1].coords.charCodeAt(1) - 'a'.charCodeAt(0))
+                + '_' + (moveSet[index - 1].coords.charCodeAt(0) - 'a'.charCodeAt(0));
+            // subtract latest move from Goban
+            console.log(latestStoneID);
+            fireEvent.mouseOver(document.querySelector('#clickSquare_' + latestStoneID));
+            fireEvent.mouseLeave(document.querySelector('#clickSquare_' + latestStoneID));
         }
-        // subtract latest move from Goban
     };
 
-    const handleNextMove = () => {
+    const handleNextMove = () => { // assumes new move, not redoing prior move
         if (index < moveSet.length) {
             testGobanStore.dispatch(setCurrentMoveIndex({
                 currentMoveIndex: index + 1
@@ -35,16 +49,11 @@ function GameTraversal() {
                     .join(''))
             }));
             // place latest move on Goban
-            let x = moveSet[index].coords.charCodeAt(0) - 'a'.charCodeAt(0);
-            let y = moveSet[index].coords.charCodeAt(1) - 'a'.charCodeAt(0);
-            console.log(x + ' ' + y);
-            const mouseOverEvent = new MouseEvent('mouseover', {
-                'view': window,
-                'bubbles': true,
-                'cancelable': true
-            });
-            document.querySelector('#clickSquare_' + y + '_' + x).dispatchEvent(mouseOverEvent);
-            document.querySelector('#clickSquare_' + y + '_' + x).click();
+            let latestStoneID = (moveSet[index].coords.charCodeAt(1) - 'a'.charCodeAt(0))
+                + '_' + (moveSet[index].coords.charCodeAt(0) - 'a'.charCodeAt(0));
+            fireEvent.mouseOver(document.querySelector('#clickSquare_' + latestStoneID));
+            document.querySelector('#clickSquare_' + latestStoneID).click();
+            fireEvent.mouseLeave(document.querySelector('#clickSquare_' + latestStoneID));
         }
     };
 

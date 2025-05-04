@@ -12,9 +12,7 @@ const SGFVisualizer = () => {
         const loadedTestBoard = Array.from({ length: boardSize }, () =>
             Array(boardSize).fill(null)
         );
-        console.log(moveSubset);
         if(moveSubset!=undefined){
-            console.log(moveSubset);
             moveSubset.forEach((move) => { // Parse SGF moves and update the board
                 if (move.coords) {
                     const x = move.coords.charCodeAt(0) - 'a'.charCodeAt(0);
